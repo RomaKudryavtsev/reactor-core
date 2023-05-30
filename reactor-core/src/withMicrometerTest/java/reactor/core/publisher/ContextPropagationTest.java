@@ -434,6 +434,27 @@ class ContextPropagationTest {
 	}
 
 	@Nested
+	class NonReactorFluxOrMono {
+
+		@Test
+		void nonReactorFlux() {
+			ExecutorService executorService = Executors.newSingleThreadExecutor();
+			Hooks.enableAutomaticContextPropagation();
+
+			AtomicReference<String> value = new AtomicReference<>();
+
+			Flux<String> flux = new ThreadSwitchingFlux<>("Hello", executorService);
+			flux
+					.doOnNext(item -> value.set(REF1.get()))
+					.contextWrite(Context.of(KEY1, "present"))
+					.blockLast();
+
+			assertThat(value.get()).isEqualTo("present");
+			executorService.shutdownNow();
+		}
+	}
+
+	@Nested
 	class NonReactorSources {
 		@Test
 		void fluxFromPublisher() throws InterruptedException, ExecutionException {

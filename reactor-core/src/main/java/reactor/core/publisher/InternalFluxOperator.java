@@ -54,12 +54,23 @@ abstract class InternalFluxOperator<I, O> extends FluxOperator<I, O> implements 
 			while (true) {
 				subscriber = operator.subscribeOrReturn(subscriber);
 				if (subscriber == null) {
+					// TODO: if internally subscribed, how to restore TLs?
 					// null means "I will subscribe myself", returning...
 					return;
 				}
 				OptimizableOperator newSource = operator.nextOptimizableSource();
 				if (newSource == null) {
-					operator.source().subscribe(subscriber);
+					CorePublisher operatorSource = operator.source();
+					if (operatorSource instanceof Scannable) {
+						Scannable scannable = (Scannable) operatorSource;
+						boolean internal = scannable.scanOrDefault(Scannable.Attr.INTERNAL, false);
+						if (!internal) {
+							subscriber = new FluxSource.FluxSourceRestoringThreadLocalsSubscriber<>(subscriber);
+						}
+					} else {
+						subscriber = new FluxSource.FluxSourceRestoringThreadLocalsSubscriber<>(subscriber);
+					}
+					operatorSource.subscribe(subscriber);
 					return;
 				}
 				operator = newSource;

@@ -38,6 +38,7 @@ interface SourceProducer<O> extends Scannable, Publisher<O> {
 	default Object scanUnsafe(Attr key) {
 		if (key == Attr.PARENT) return Scannable.from(null);
 		if (key == Attr.ACTUAL) return Scannable.from(null);
+		if (key == Attr.INTERNAL) return Scannable.from(true);
 
 		return null;
 	}
